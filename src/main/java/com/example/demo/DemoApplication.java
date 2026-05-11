@@ -1,34 +1,29 @@
 package com.example.demo;
 
-import java.lang.instrument.ClassDefinition;
-import java.sql.Driver;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Classe principal da aplicação Spring Boot.
+ * Classe principal da aplicacao Spring Boot.
  *
- * Responsável por inicializar e executar a aplicação de gerenciamento de usuários.
- * Esta aplicação demonstra o uso de JPA para persistência de dados,
- * incluindo operações CRUD básicas e configurações de transação.
+ * Demonstra Transacoes Distribuidas (DTX) sobre H2 + MongoDB usando
+ * tres padroes:
+ *   - Two-Phase Commit (2PC) manual
+ *   - Transactional Outbox + Relay assincrono
+ *   - SAGA com compensacoes
+ *
+ * @EnableScheduling habilita o OutboxRelay que polla a tabela outbox_events
+ * e replica os eventos PENDING para o MongoDB.
  *
  * @author DAC
- * @version 1.0
+ * @version 2.0
  */
 @SpringBootApplication
+@EnableScheduling
 public class DemoApplication {
 
-    /**
-     * Ponto de entrada da aplicação.
-     *
-     * Inicia o contexto do Spring Boot e carrega todas as configurações,
-     * incluindo a injeção de dependências e o servidor web embarcado.
-     *
-     * @param args Argumentos de linha de comando
-     */
     public static void main(String[] args) {
         SpringApplication.run(DemoApplication.class, args);
     }
-
 }

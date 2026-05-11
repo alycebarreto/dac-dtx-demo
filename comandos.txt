@@ -1,0 +1,83 @@
+═══════════════════════════════════════════════════════════════════════════
+COMANDOS PARA A APRESENTACAO — copia e cola um por vez
+═══════════════════════════════════════════════════════════════════════════
+
+# ──────────────────────────────────────────────────────────────────────────
+# Antes de comecar — conferir que Docker e a app estao no ar
+# ──────────────────────────────────────────────────────────────────────────
+
+docker ps
+
+.\gradlew.bat bootRun
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# CENARIO 1 — 2PC FELIZ (Alice salva nos dois bancos)
+# Esperado: result: COMMITTED
+# ──────────────────────────────────────────────────────────────────────────
+
+Invoke-RestMethod -Method POST -Uri http://localhost:8081/users/dtx/2pc -ContentType 'application/json' -Body '{"name":"Alice","email":"alice@dac.com"}'
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# CENARIO 2 — 2PC ROLLBACK (Mongo vota NO no prepare)
+# Esperado: result: ROLLED_BACK | Bob NAO entra em banco nenhum
+# ──────────────────────────────────────────────────────────────────────────
+
+Invoke-RestMethod -Method POST -Uri "http://localhost:8081/users/dtx/2pc?failMongoPrepare=true" -ContentType 'application/json' -Body '{"name":"Bob","email":"bob@dac.com"}'
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# CENARIO 3 — 2PC PARTIAL FAILURE (estado heuristico - cenario chave!)
+# Esperado: result: PARTIAL_FAILURE | Carol entra so no H2
+# Falar: "esse e o famoso problema do estado heuristico do 2PC"
+# ──────────────────────────────────────────────────────────────────────────
+
+Invoke-RestMethod -Method POST -Uri "http://localhost:8081/users/dtx/2pc?failMongoCommit=true" -ContentType 'application/json' -Body '{"name":"Carol","email":"carol@dac.com"}'
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# CENARIO 4 — OUTBOX (replicacao assincrona)
+# Esperado: result: PERSISTED_LOCAL_PENDING_REPLICATION
+# Esperar 5-6s e mostrar [OUTBOX-RELAY] no terminal 1
+# ──────────────────────────────────────────────────────────────────────────
+
+Invoke-RestMethod -Method POST -Uri http://localhost:8081/users/dtx/outbox -ContentType 'application/json' -Body '{"name":"Dave","email":"dave@dac.com"}'
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# CENARIO 5 — SAGA FELIZ (todos os passos OK)
+# Esperado: result: COMPLETED
+# ──────────────────────────────────────────────────────────────────────────
+
+Invoke-RestMethod -Method POST -Uri http://localhost:8081/users/dtx/saga -ContentType 'application/json' -Body '{"name":"Eve","email":"eve@dac.com"}'
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# CENARIO 6 — SAGA COMPENSADA (mostra o contraste com o cenario 3)
+# Esperado: result: COMPENSATED | Frank NAO entra em banco nenhum
+# Falar: "vê a diferença? SAGA consegue voltar atras, 2PC nao conseguiu"
+# ──────────────────────────────────────────────────────────────────────────
+
+Invoke-RestMethod -Method POST -Uri "http://localhost:8081/users/dtx/saga?failOnMongo=true" -ContentType 'application/json' -Body '{"name":"Frank","email":"frank@dac.com"}'
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# ESTADO FINAL — mostrar os 2 bancos lado a lado
+# Esperado:
+#   H2:    Alice, Carol, Dave, Eve         (Bob e Frank sumiram)
+#   Mongo: Alice, Dave, Eve                (Bob, Carol, Frank sumiram)
+#   → Carol esta so no H2 = estado heuristico do 2PC
+# ──────────────────────────────────────────────────────────────────────────
+
+Invoke-RestMethod -Method GET -Uri http://localhost:8081/users/dtx/state | ConvertTo-Json -Depth 5
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# COMANDO BONUS — limpar tudo e recomecar (so se precisar)
+# ──────────────────────────────────────────────────────────────────────────
+
+# Para a aplicacao no terminal 1: aperta Ctrl+C
+# Reiniciar tudo:
+docker restart dac-mongo
+.\gradlew.bat bootRun
