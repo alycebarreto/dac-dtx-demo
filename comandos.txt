@@ -6,8 +6,6 @@ COMANDOS PARA A APRESENTACAO — copia e cola um por vez
 # Antes de comecar — conferir que Docker e a app estao no ar
 # ──────────────────────────────────────────────────────────────────────────
 
-docker ps
-
 .\gradlew.bat bootRun
 
 

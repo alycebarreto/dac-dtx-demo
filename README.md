@@ -1,6 +1,6 @@
 # DAC — Transações Distribuídas (2PC, Outbox, SAGA)
 
-Trabalho da disciplina DAC. Persiste a mesma entidade `User` em dois bancos (H2 e MongoDB) usando três padrões clássicos de transação distribuída, sem framework (sem Atomikos, sem JTA).
+Trabalho da disciplina DAC que salva a mesma entidade `User` em dois bancos (H2 e MongoDB Atlas) usando três padrões clássicos de transação distribuída, sem framework (sem Atomikos, sem JTA).
 
 ## Padrões
 
@@ -13,17 +13,9 @@ Tudo orquestrado em `DistributedUserService` e exposto via REST em `UserControll
 ## Pré-requisitos
 
 - Java 17 (Adoptium Temurin)
-- Docker Desktop (pro MongoDB local)
+- Conexão com internet (MongoDB Atlas)
 
 ## Como rodar
-
-Sobe um MongoDB local via Docker (uma vez só):
-
-```powershell
-docker run -d --name dac-mongo -p 27017:27017 mongo:7
-```
-
-Roda a aplicação:
 
 ```powershell
 .\gradlew.bat bootRun
@@ -37,11 +29,15 @@ Configurações em `src/main/resources/application.properties`:
 
 ```properties
 app.dao.impl=dtx
-app.mongo.uri=mongodb://localhost:27017
+app.mongo.uri=mongodb+srv://ciceroaraujo_db_user:<password>@cluster0.xosnyyn.mongodb.net/?appName=Cluster0
 app.mongo.database=demo
 ```
 
-A URI do MongoDB Atlas do enunciado fica como referência comentada no arquivo. Estou usando Mongo local em Docker pela estabilidade da demo (o Atlas do enunciado apresentou erro de conexão TLS no horário dos testes). Para usar o Atlas, basta descomentar a linha correspondente.
+### Sobre o cluster MongoDB Atlas
+
+O projeto usa um cluster MongoDB Atlas M0 free tier, criado com as credenciais do enunciado do trabalho (`ciceroaraujo_db_user` / mesma senha). O cluster original do professor estava retornando erro de handshake TLS (`javax.net.ssl.SSLException: internal_error`) na rede usada para o desenvolvimento, então provisionei um cluster equivalente na minha conta Atlas mantendo o mesmo usuário, senha e nome de cluster (`Cluster0`). O único campo diferente é o ID único do cluster (`xosnyyn` em vez de `h8erc5h`), que é gerado automaticamente pelo Atlas.
+
+Como fallback, existe também uma linha comentada no `application.properties` apontando para `mongodb://localhost:27017` — basta inverter os comentários para rodar contra um MongoDB local em Docker, se necessário.
 
 ## Como testar (PowerShell)
 
@@ -124,7 +120,7 @@ DistributedUserService    orquestra 2PC + Outbox + SAGA
 | UserH2DAO | `H2DtxParticipant` |
 | UserMongoDAO | `MongoDtxParticipant` |
 
-Usei `Participant` no lugar de `DAO` porque é o termo padrão da literatura de 2PC (Resource Manager / Participant). Funcionalmente é o mesmo papel.
+A nomenclatura `Participant` segue a terminologia da especificação JTA/XA e da literatura clássica de processamento de transações distribuídas (Resource Manager / Participant). Mantive esse nome para evidenciar que as classes não implementam apenas operações CRUD: elas exercem o papel formal de participantes do protocolo Two-Phase Commit, expondo os métodos `prepare()`, `commit()` e `rollback()`. Semanticamente, corresponde ao DAO indicado no diagrama UML.
 
 ## Observações
 

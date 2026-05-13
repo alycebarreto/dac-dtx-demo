@@ -7,32 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Coordinator de Transacao Distribuida (Two-Phase Commit manual).
- *
- * Diferente do XATransactionCoordinator (que usa javax.transaction.xa.XAResource
- * e so funciona com bancos XA-capable como H2), este coordinator trabalha
- * sobre uma interface generica (DtxParticipant) — o que nos permite incluir
- * o MongoDB no protocolo (Mongo nao tem XA nativo).
- *
- * Fluxo:
- *
- *   coordinator.run( List.of(h2Participant, mongoParticipant) )
- *      |
- *      ├── FASE 1 — PREPARE em todos
- *      |     Se algum disser NAO → para imediatamente e parte pra rollback
- *      |
- *      ├── FASE 2 — COMMIT em todos (se prepare unanime)
- *      |     Se algum commit falhar (raro, ja foi preparado) → log e tenta
- *      |     compensar com rollback nos restantes (modo SAGA degradado).
- *      |
- *      └── ROLLBACK em todos (se prepare nao foi unanime ou commit falhou)
- *
- * Resultado retornado:
- *   - DtxResult.COMMITTED: transacao distribuida concluida com sucesso
- *   - DtxResult.ROLLED_BACK: desfeita (alguem votou nao ou erro pre-commit)
- *   - DtxResult.PARTIAL_FAILURE: estado heuristico — alguns commitaram, outros nao
- */
+
 @Component
 public class DtxCoordinator {
 
