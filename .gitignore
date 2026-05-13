@@ -1,5 +1,6 @@
 test.py
 test.sh
+application.properties
 
 # Ignore build files to Java
 build/
@@ -11,7 +12,3 @@ target/
 *.iml
 java_installs/
 
-
-# Others
-.claude/
-.DS_Store
